@@ -212,6 +212,8 @@ class SeriesPage(customtkinter.CTkFrame):
         customtkinter.CTkLabel(self, text='SERIES', font=('Helvetica', 50), text_color=menu_button_hoverCOLOR).pack(pady=20)
 
         self.current_selection = None
+        self.card_frames = {}  
+        self.current_frame = None  
 
         self.searchFrame = customtkinter.CTkFrame(self, fg_color=main_bgCOLOR, width=560, height=40)
         self.searchFrame.pack(pady=30)
@@ -222,99 +224,91 @@ class SeriesPage(customtkinter.CTkFrame):
         self.searchYearENTRY = customtkinter.CTkEntry(self.searchFrame, placeholder_text='Year (Optional)', width=120, height=30)
         self.searchYearENTRY.place(x=270, y=5)
 
-        self.searchBUTTON = customtkinter.CTkButton(self.searchFrame, text='Search', width=150, height=35, command= self.perform_search)
+        self.searchBUTTON = customtkinter.CTkButton(self.searchFrame, text='Search', width=150, height=35, command=self.perform_search)
         self.searchBUTTON.place(x=400, y=3)
-        self.searchBUTTON.configure(state=DISABLED)
+        self.searchBUTTON.configure(state=customtkinter.DISABLED)
 
-
-        self.current_frame = None
+        self.frames = {}  
 
         self.switch_frame_buttons = customtkinter.CTkFrame(self, fg_color=main_bgCOLOR, width=800, height=120)
         self.switch_frame_buttons.pack(pady=10)
 
-        self.toWatchBUTTON = customtkinter.CTkButton(self.switch_frame_buttons, fg_color=main_bgCOLOR, 
-                            text='To Watch', width=200, height=35, font=('Bold', 15), hover_color=menu_button_hoverCOLOR, 
-                            command=lambda: self.towatch(self.TWindicator))
-        
+        self.toWatchBUTTON = customtkinter.CTkButton(self.switch_frame_buttons, fg_color=main_bgCOLOR,
+                                                     text='To Watch', width=200, height=35, font=('Bold', 15), hover_color=menu_button_hoverCOLOR,
+                                                     command=lambda: self.show_frame("to_watch", self.TWindicator))
+
         self.toWatchBUTTON.pack(side=customtkinter.LEFT, padx=10)
         self.TWindicator = customtkinter.CTkLabel(self.switch_frame_buttons, fg_color=main_bgCOLOR, text='', width=200)
         self.TWindicator.place(x=10, y=30)
 
+        self.watchedBUTTON = customtkinter.CTkButton(self.switch_frame_buttons, fg_color=main_bgCOLOR,
+                                                     text='Watched', width=200, height=35, font=('Bold', 15), hover_color=menu_button_hoverCOLOR,
+                                                     command=lambda: self.show_frame("watched", self.WEDindicator))
 
-        self.watchedBUTTON = customtkinter.CTkButton(self.switch_frame_buttons, fg_color=main_bgCOLOR, 
-                            text='Watched', width=200, height=35, font=('Bold', 15), hover_color=menu_button_hoverCOLOR, 
-                            command=lambda: self.watched(self.WEDindicator))
-        
         self.watchedBUTTON.pack(side=customtkinter.LEFT, padx=10)
         self.WEDindicator = customtkinter.CTkLabel(self.switch_frame_buttons, fg_color=main_bgCOLOR, text='', width=200)
         self.WEDindicator.place(x=231, y=30)
 
+        self.watchingBUTTON = customtkinter.CTkButton(self.switch_frame_buttons, fg_color=main_bgCOLOR,
+                                                      text='Watching', width=200, height=35, font=('Bold', 15), hover_color=menu_button_hoverCOLOR,
+                                                      command=lambda: self.show_frame("watching", self.WINGindicator))
 
-        self.watchingBUTTON = customtkinter.CTkButton(self.switch_frame_buttons, fg_color=main_bgCOLOR, 
-                            text='Watching', width=200, height=35, font=('Bold', 15), hover_color=menu_button_hoverCOLOR, 
-                            command=lambda: self.watching(self.WINGindicator))
-                            
         self.watchingBUTTON.pack(side=customtkinter.LEFT, padx=10)
         self.WINGindicator = customtkinter.CTkLabel(self.switch_frame_buttons, fg_color=main_bgCOLOR, text='', width=200)
         self.WINGindicator.place(x=452, y=30)
-    
 
     def perform_search(self):
         title = self.searchTitleENTRY.get()
         year = self.searchYearENTRY.get()
         print(f"Searching for {title} ({year}) under category: {self.current_selection}")
-        self.manager.run(title, self.current_selection, year)
-        
+
+        results = self.manager.run(title, self.current_selection, year)
+        if results:
+            self.add_card(self.current_frame, results)
+        else:
+            messagebox.showinfo("Search Result", "No details found.")
+
+    def add_card(self, parent, details):
+        card_frame = customtkinter.CTkFrame(parent, fg_color='white')
+        card_frame.pack(pady=10)
+
+        for key, value in details.items():
+            label = customtkinter.CTkLabel(card_frame, text=f"{key}: {value}")
+            label.pack(pady=5)
+
+        if self.current_selection not in self.card_frames:
+            self.card_frames[self.current_selection] = []
+        self.card_frames[self.current_selection].append(card_frame)
+
     def hide_current_frame(self):
         if self.current_frame is not None:
             self.current_frame.pack_forget()
-            # self.current_frame.destroy()
-            self.current_frame = None
 
-    def towatch(self, indicator):
-        self.current_selection = "to_watch"
-        self.searchBUTTON.configure(state=NORMAL)
+    def show_frame(self, selection, indicator):
+        self.current_selection = selection
+        self.searchBUTTON.configure(state=customtkinter.NORMAL)
 
-        self.TWindicator.configure(fg_color = main_bgCOLOR)
-        self.WEDindicator.configure(fg_color = main_bgCOLOR)
-        self.WINGindicator.configure(fg_color = main_bgCOLOR)
+        self.TWindicator.configure(fg_color=main_bgCOLOR)
+        self.WEDindicator.configure(fg_color=main_bgCOLOR)
+        self.WINGindicator.configure(fg_color=main_bgCOLOR)
 
-        indicator.configure(fg_color = menu_bgCOLOR)
-
+        indicator.configure(fg_color=menu_bgCOLOR)
 
         self.hide_current_frame()
-        self.current_frame = customtkinter.CTkScrollableFrame(self, fg_color=menu_bgCOLOR, height=560, width=1220)
-        self.current_frame.pack()
+        if selection not in self.frames:
+            frame = customtkinter.CTkScrollableFrame(self, fg_color=menu_bgCOLOR, height=560, width=1220)
+            frame.pack()
+            self.frames[selection] = frame
+        else:
+            frame = self.frames[selection]
+            frame.pack()
 
+        self.current_frame = frame
 
-    def watched(self, indicator):
-        self.current_selection = "watched"
-        self.searchBUTTON.configure(state=NORMAL)
-        self.TWindicator.configure(fg_color = main_bgCOLOR)
-        self.WEDindicator.configure(fg_color = main_bgCOLOR)
-        self.WINGindicator.configure(fg_color = main_bgCOLOR)
+        if selection in self.card_frames:
+            for card in self.card_frames[selection]:
+                card.pack(pady=10)
 
-        indicator.configure(fg_color = menu_bgCOLOR)
-
-        self.hide_current_frame()
-        self.current_frame = customtkinter.CTkScrollableFrame(self, fg_color=menu_bgCOLOR, height=560, width=1220)
-        self.current_frame.pack()
-
-
-
-    def watching(self, indicator):
-        self.current_selection = "watching"
-        self.searchBUTTON.configure(state=NORMAL)
-
-        self.TWindicator.configure(fg_color = main_bgCOLOR)
-        self.WEDindicator.configure(fg_color = main_bgCOLOR)
-        self.WINGindicator.configure(fg_color = main_bgCOLOR)
-
-        indicator.configure(fg_color = menu_bgCOLOR)
-
-        self.hide_current_frame()
-        self.current_frame = customtkinter.CTkScrollableFrame(self, fg_color=menu_bgCOLOR, height=560, width=1220)
-        self.current_frame.pack()
 
 
 class DataBasePage(customtkinter.CTkFrame):
